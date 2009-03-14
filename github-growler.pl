@@ -10,9 +10,21 @@ use LWP::Simple;
 use URI;
 use XML::Feed;
 
+my %events = (
+    "New Commits" => qr/(?:pushed to|committed to)/,
+    "New Repository" => qr/created repository/,
+    "Forked Repository" => qr/created branch/,
+    "New Branch" => qr/created repository/,
+    "New Gist" => qr/created gist:/,
+    "Updated Gist" => qr/updated gist:/,
+    "Forked Gist" => qr/forked gist:/,
+    "Watching Project" => qr/started watching/,
+    "Following People" => qr/started following/,
+);
+
 my $AppName = "Github Growler";
-my $event   = "New Activity";
-Mac::Growl::RegisterNotifications($AppName, [ $event ], [ $event ]);
+my @events  = ((keys %events), "Error", "Misc");
+Mac::Growl::RegisterNotifications($AppName, \@events, \@events);
 
 my $TempDir = "$ENV{HOME}/Library/Caches/com.github.Growler";
 mkdir $TempDir, 0777 unless -e $TempDir;
@@ -50,7 +62,7 @@ sub growl_feed {
                  "http://github.com/$user.private.actor.atom?token=$token") {
         my $feed = XML::Feed->parse(URI->new($uri));
         unless ($feed) {
-            Mac::Growl::PostNotification($AppName, $event, $AppName, "Can't parse the feed $uri", 0, 0, $AppIcon);
+            Mac::Growl::PostNotification($AppName, "Error", $AppName, "Can't parse the feed $uri", 0, 0, $AppIcon);
             next;
         }
 
@@ -63,15 +75,17 @@ sub growl_feed {
 
         my $i;
         for my $stuff (@to_growl) {
-            my($title, $description, $icon, $last);
+            my($event, $title, $description, $icon, $last);
             if ($i++ >= $options{max}) {
                 my %uniq;
+                $event = "Misc";
                 $title = $AppName;
                 $description = (@to_growl - $options{max}) . " more updates from " .
                     join(", ", grep !$uniq{$_}++, map $_->{user}{name}, @to_growl[$i..$#to_growl]);
                 $icon = $AppIcon;
                 $last = 1;
             } else {
+                $event = get_event_type($stuff->{entry}->title);
                 $title = $stuff->{user}{name};
                 $description = $stuff->{entry}->title;
                 $icon = "$stuff->{user}{avatar}";
@@ -80,6 +94,17 @@ sub growl_feed {
             last if $last;
         }
     }
+}
+
+sub get_event_type {
+    my $title = shift;
+
+    for my $type (keys %events) {
+        my $re = $events{$type};
+        return $type if $title =~ $re;
+    }
+
+    return "Misc";
 }
 
 sub get_user {
