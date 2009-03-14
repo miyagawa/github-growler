@@ -2,6 +2,7 @@
 use strict;
 use App::Cache;
 use Mac::Growl;
+use File::Copy;
 use Getopt::Long;
 use LWP::Simple;
 use URI;
@@ -13,6 +14,9 @@ Mac::Growl::RegisterNotifications($AppName, [ $event ], [ $event ]);
 
 my $TempDir = "$ENV{HOME}/Library/Caches/com.github.Growler";
 mkdir $TempDir, 0777 unless -e $TempDir;
+
+my $AppIcon = "$TempDir/miyagawa.png";
+copy "octocat.png", $AppIcon;
 
 my(%UserCache, %Seen);
 
@@ -29,6 +33,10 @@ sub get_github_token {
     chomp(my $user  = `git config github.user`);
     chomp(my $token = `git config github.token`);
 
+    unless ($user && $token) {
+        die "Can't find .gitconfig entries for github.user and github.token\n";
+    }
+
     return ($user, $token);
 }
 
@@ -38,6 +46,11 @@ sub growl_feed {
     for my $uri ("http://github.com/$user.private.atom?token=$token",
                  "http://github.com/$user.private.actor.atom?token=$token") {
         my $feed = XML::Feed->parse(URI->new($uri));
+        unless ($feed) {
+            Mac::Growl::PostNotification($AppName, $event, $AppName, "Can't parse the feed $uri", 0, 0, $AppIcon);
+            next;
+        }
+
         for my $entry ($feed->entries) {
             next if $Seen{$entry->id};
             my $user = get_user($entry->author);
