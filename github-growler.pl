@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 use strict;
+use warnings;
+use 5.008001;
 use App::Cache;
 use Mac::Growl;
 use File::Copy;
@@ -18,7 +20,7 @@ mkdir $TempDir, 0777 unless -e $TempDir;
 my $AppIcon = "$TempDir/miyagawa.png";
 copy "octocat.png", $AppIcon;
 
-my $Cache = App::Cache->new;
+my $Cache = App::Cache->new({ ttl => 60*60*24, application => $AppName });
 my %Seen;
 
 my %options = (interval => 300, max => 10);
@@ -84,7 +86,7 @@ sub get_user {
     my $name = shift;
     $Cache->get_code("user:$name", sub {
         use Web::Scraper;
-        scraper {
+        my $res = scraper {
             process "#profile_name", name => 'TEXT';
             process ".identity img", avatar => [ '@src', sub {
                 my $path = "$TempDir/$name.jpg";
@@ -93,7 +95,23 @@ sub get_user {
                 return $path;
             } ];
         }->scrape(URI->new("http://github.com/$name"));
+        $res->{name} ||= $name;
+        $res;
     });
 }
 
+__END__
 
+=head1 NAME
+
+github-growler
+
+=head1 AUTHOR
+
+Tatsuhiko Miyagawa
+
+=head1 LICENSE
+
+This program is licensed under the same terms as Perl itself.
+
+=cut
