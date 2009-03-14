@@ -18,10 +18,11 @@ mkdir $TempDir, 0777 unless -e $TempDir;
 my $AppIcon = "$TempDir/miyagawa.png";
 copy "octocat.png", $AppIcon;
 
-my(%UserCache, %Seen);
+my $Cache = App::Cache->new;
+my %Seen;
 
-my %options = (interval => 300);
-GetOptions(\%options, "interval=i");
+my %options = (interval => 300, max => 10);
+GetOptions(\%options, "interval=i", "max=i");
 my @args = @ARGV == 2 ? @ARGV : get_github_token();
 
 while (1) {
@@ -51,18 +52,37 @@ sub growl_feed {
             next;
         }
 
+        my @to_growl;
         for my $entry ($feed->entries) {
-            next if $Seen{$entry->id};
+            next if $Seen{$entry->id}++;
             my $user = get_user($entry->author);
-            Mac::Growl::PostNotification($AppName, $event, $user->{name}, $entry->title, 0, 0, "$user->{avatar}");
-            $Seen{$entry->id}++;
+            push @to_growl, { entry => $entry, user => $user };
+        }
+
+        my $i;
+        for my $stuff (@to_growl) {
+            my($title, $description, $icon, $last);
+            if ($i++ >= $options{max}) {
+                my %uniq;
+                $title = $AppName;
+                $description = (@to_growl - $options{max}) . " more updates from " .
+                    join(", ", grep !$uniq{$_}++, map $_->{user}{name}, @to_growl[$i..$#to_growl]);
+                $icon = $AppIcon;
+                $last = 1;
+            } else {
+                $title = $stuff->{user}{name};
+                $description = $stuff->{entry}->title;
+                $icon = "$stuff->{user}{avatar}";
+            }
+            Mac::Growl::PostNotification($AppName, $event, $title, $description, 0, 0, $icon);
+            last if $last;
         }
     }
 }
 
 sub get_user {
     my $name = shift;
-    return $UserCache{$name} ||= do {
+    $Cache->get_code("user:$name", sub {
         use Web::Scraper;
         scraper {
             process "#profile_name", name => 'TEXT';
@@ -73,7 +93,7 @@ sub get_user {
                 return $path;
             } ];
         }->scrape(URI->new("http://github.com/$name"));
-    };
+    });
 }
 
 
