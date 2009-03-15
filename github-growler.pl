@@ -3,12 +3,15 @@ use strict;
 use warnings;
 use 5.008001;
 use App::Cache;
+use Encode;
 use Mac::Growl;
 use File::Copy;
 use Getopt::Long;
 use LWP::Simple;
 use URI;
 use XML::Feed;
+
+$XML::Atom::ForceUnicode = 1;
 
 my %events = (
     "New Commits" => qr/(?:pushed to|committed to)/,
@@ -98,7 +101,7 @@ sub growl_feed {
                 $description .= ": $body" if $body;
                 $icon = "$stuff->{user}{avatar}";
             }
-            Mac::Growl::PostNotification($AppName, $event, $title, $description, 0, 0, $icon);
+            Mac::Growl::PostNotification($AppName, $event, encode_utf8($title), encode_utf8($description), 0, 0, $icon);
             last if $last;
         }
     }
