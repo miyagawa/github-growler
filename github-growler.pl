@@ -29,7 +29,7 @@ Mac::Growl::RegisterNotifications($AppName, [ @events, 'Error' ], \@events);
 my $TempDir = "$ENV{HOME}/Library/Caches/com.github.Growler";
 mkdir $TempDir, 0777 unless -e $TempDir;
 
-my $AppIcon = "$TempDir/miyagawa.png";
+my $AppIcon = "$TempDir/octocat.png";
 copy "octocat.png", $AppIcon;
 
 my $Cache = App::Cache->new({ ttl => 60*60*24, application => $AppName });
