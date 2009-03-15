@@ -115,8 +115,7 @@ sub get_user {
             process "#profile_name", name => 'TEXT';
             process ".identity img", avatar => [ '@src', sub {
                 my $path = "$TempDir/$name.jpg";
-                LWP::Simple::mirror($_, $path)
-                    unless -e $path && -s _;
+                LWP::Simple::mirror($_, $path);
                 return $path;
             } ];
         }->scrape(URI->new("http://github.com/$name"));
