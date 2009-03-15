@@ -91,15 +91,25 @@ sub growl_feed {
                 $icon = $AppIcon;
                 $last = 1;
             } else {
+                my $body = munge_update_body($stuff->{entry}->content->body);
                 $event = get_event_type($stuff->{entry}->title);
                 $title = $stuff->{user}{name};
-                $description = $stuff->{entry}->title;
+                $description  = $stuff->{entry}->title;
+                $description .= ": $body" if $body;
                 $icon = "$stuff->{user}{avatar}";
             }
             Mac::Growl::PostNotification($AppName, $event, $title, $description, 0, 0, $icon);
             last if $last;
         }
     }
+}
+
+sub munge_update_body {
+    use Web::Scraper;
+    my $content = shift;
+    my $res = scraper { process "div.message", message => 'TEXT' }->scrape($content);
+    $res->{message} =~ s/^\s*[0-9a-f]{40}\s*//; # strip SHA1
+    return $res->{message};
 }
 
 sub get_event_type {
