@@ -23,8 +23,8 @@ my %events = (
 );
 
 my $AppName = "Github Growler";
-my @events  = ((keys %events), "Error", "Misc");
-Mac::Growl::RegisterNotifications($AppName, \@events, \@events);
+my @events  = ((keys %events), "Misc");
+Mac::Growl::RegisterNotifications($AppName, [ @events, 'Error' ], \@events);
 
 my $TempDir = "$ENV{HOME}/Library/Caches/com.github.Growler";
 mkdir $TempDir, 0777 unless -e $TempDir;
