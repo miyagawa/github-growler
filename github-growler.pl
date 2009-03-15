@@ -13,8 +13,8 @@ use XML::Feed;
 my %events = (
     "New Commits" => qr/(?:pushed to|committed to)/,
     "New Repository" => qr/created repository/,
-    "Forked Repository" => qr/created branch/,
-    "New Branch" => qr/created repository/,
+    "Forked Repository" => qr/forked (?!gist:)/,
+    "New Branch" => qr/created branch/,
     "New Gist" => qr/created gist:/,
     "Updated Gist" => qr/updated gist:/,
     "Forked Gist" => qr/forked gist:/,
