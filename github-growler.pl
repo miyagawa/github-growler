@@ -79,9 +79,15 @@ sub growl_feed {
             if ($i++ >= $options{max}) {
                 my %uniq;
                 $event = "Misc";
-                $title = $AppName;
-                $description = (@to_growl - $options{max}) . " more updates from " .
-                    join(", ", grep !$uniq{$_}++, map $_->{user}{name}, @to_growl[$i..$#to_growl]);
+                $title = (@to_growl - $options{max}) . " more updates";
+                my @who = grep !$uniq{$_}++, map $_->{user}{name}, @to_growl[$i..$#to_growl];
+                $description = "From ";
+                if (@who > 1) {
+                    $description .= join ", ", @who[0..$#who-1];
+                    $description .= " and " . $who[-1];
+                } else {
+                    $description .= "$who[0]";
+                }
                 $icon = $AppIcon;
                 $last = 1;
             } else {
