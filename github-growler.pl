@@ -6,7 +6,6 @@ use App::Cache;
 use Encode;
 use Mac::Growl;
 use File::Copy;
-use Getopt::Long;
 use LWP::Simple;
 use URI;
 use XML::Feed;
@@ -25,11 +24,13 @@ my %events = (
     "Following People" => qr/started following/,
 );
 
+my $AppDomain = "net.bulknews.GitHubGrowler";
+
 my $AppName = "Github Growler";
 my @events  = ((keys %events), "Misc");
 Mac::Growl::RegisterNotifications($AppName, [ @events, 'Error' ], \@events);
 
-my $TempDir = "$ENV{HOME}/Library/Caches/com.github.Growler";
+my $TempDir = "$ENV{HOME}/Library/Caches/$AppDomain";
 mkdir $TempDir, 0777 unless -e $TempDir;
 
 my $AppIcon = "$TempDir/octocat.png";
@@ -38,13 +39,36 @@ copy "octocat.png", $AppIcon;
 my $Cache = App::Cache->new({ ttl => 60*60*24, application => $AppName });
 my %Seen;
 
-my %options = (interval => 300, max => 10);
-GetOptions(\%options, "interval=i", "max=i");
+my %options = (interval => 300, maxGrowls => 10);
+get_preferences(\%options, "interval", "maxGrowls");
 my @args = @ARGV == 2 ? @ARGV : get_github_token();
 
 while (1) {
     growl_feed(@args);
     sleep $options{interval};
+}
+
+sub get_preferences {
+    my($opts, @keys) = @_;
+
+    for my $key (@keys) {
+        my $value = read_preference($key);
+        $opts->{$key} = $value if defined $value;
+    }
+}
+
+sub read_preference {
+    my $key = shift;
+
+    no warnings 'once';
+    open OLDERR, ">&STDERR";
+    open STDERR, ">/dev/null";
+    my $value = `defaults read $AppDomain $key`;
+    open STDERR, ">&OLDERR";
+
+    return if $value eq '';
+    chomp $value;
+    return $value;
 }
 
 sub get_github_token {
@@ -80,10 +104,10 @@ sub growl_feed {
         my $i;
         for my $stuff (@to_growl) {
             my($event, $title, $description, $icon, $last);
-            if ($i++ >= $options{max}) {
+            if ($i++ >= $options{maxGrowls}) {
                 my %uniq;
                 $event = "Misc";
-                $title = (@to_growl - $options{max}) . " more updates";
+                $title = (@to_growl - $options{maxGrowls}) . " more updates";
                 my @who = grep !$uniq{$_}++, map $_->{user}{name}, @to_growl[$i..$#to_growl];
                 $description = "From ";
                 if (@who > 1) {
