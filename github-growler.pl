@@ -73,6 +73,7 @@ sub growl_feed {
         for my $entry ($feed->entries) {
             next if $Seen{$entry->id}++;
             my $user = get_user($entry->author);
+            $user->{name} ||= $entry->author;
             push @to_growl, { entry => $entry, user => $user };
         }
 
@@ -99,7 +100,7 @@ sub growl_feed {
                 $title = $stuff->{user}{name};
                 $description  = $stuff->{entry}->title;
                 $description .= ": $body" if $body;
-                $icon = "$stuff->{user}{avatar}";
+                $icon = $stuff->{user}{avatar} ? "$stuff->{user}{avatar}" : $AppIcon;
             }
             Mac::Growl::PostNotification($AppName, $event, encode_utf8($title), encode_utf8($description), 0, 0, $icon);
             last if $last;
@@ -130,16 +131,16 @@ sub get_user {
     my $name = shift;
     $Cache->get_code("user:$name", sub {
         use Web::Scraper;
-        my $res = scraper {
+        my $scraper = scraper {
             process "#profile_name", name => 'TEXT';
             process ".identity img", avatar => [ '@src', sub {
                 my $path = "$TempDir/$name.jpg";
                 LWP::Simple::mirror($_, $path);
                 return $path;
             } ];
-        }->scrape(URI->new("http://github.com/$name"));
-        $res->{name} ||= $name;
-        $res;
+        };
+
+        return eval { $scraper->scrape(URI->new("http://github.com/$name")) } || {};
     });
 }
 
