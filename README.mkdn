@@ -2,7 +2,11 @@ This is Github Growler.
 
 You need to set github.user and github.token in your [global git config](http://github.com/guides/local-github-config) or pass them to the command line arguments.
 
-This is a perl script that runs as a daemon and you need to install CPAN module dependencies by running `cpan -i .`
+By default it fetches the github updates every 300 seconds (--interval) and displays at most 10 Growl notification per crawl (--max) and you can change the both settings with the command line option.
+
+This is a perl script that runs as a daemon. You need to install CPAN module dependencies by running `cpan -i .`
+
+It's in my TODO to make it a standalone app. I guess we could use [Platypus](http://www.sveinbjorn.org/platypus) and bundle all CPAN dependencies in its Resources folder by removing the non pure-perl module dependency (i.e. XML::LibXML).
 
 ## Screenshots
 
