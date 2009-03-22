@@ -2,7 +2,7 @@ This is Github Growler: fetches GitHub timeline and growls as new activies are c
 
 This is a perl script that runs as a daemon. You need to install CPAN module dependencies by running `cpan -i`.  See `man cpan` for details.
 
-You need to set `github.user` and `github.token1 in your [global git config](http://github.com/guides/local-github-config) or pass them to the command line arguments.
+You need to set `github.user` and `github.token` in your [global git config](http://github.com/guides/local-github-config) or pass them to the command line arguments.
 
 By default this scripts fetches the github updates every 300 seconds and displays at most 10 Growl notification per fetch and you can change the both settings with Mac OS X preferences:
 
