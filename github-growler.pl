@@ -85,8 +85,12 @@ sub get_github_token {
 sub growl_feed {
     my($user, $token) = @_;
 
-    for my $uri ("http://github.com/$user.private.atom?token=$token",
-                 "http://github.com/$user.private.actor.atom?token=$token") {
+    my @feeds = (
+        "http://github.com/$user.private.atom?token=$token",
+        "http://github.com/$user.private.actor.atom?token=$token",
+    );
+
+    for my $uri (@feeds) {
         my $feed = eval { XML::Feed->parse(URI->new($uri)) };
         unless ($feed) {
             Mac::Growl::PostNotification($AppName, "Error", $AppName, "Can't parse the feed $uri", 0, 0, $AppIcon);
