@@ -162,7 +162,8 @@ sub get_user {
         my $scraper = scraper {
             process "#profile_name", name => 'TEXT';
             process ".identity img", avatar => [ '@src', sub {
-                my $path = "$TempDir/$name.jpg";
+                my $suffix = (split(/\./, $_))[-1];
+                my $path = "$TempDir/$name.$suffix";
                 LWP::Simple::mirror($_, $path);
                 return $path;
             } ];
