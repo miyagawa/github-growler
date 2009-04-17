@@ -23,6 +23,7 @@ my %events = (
     "Watching Project" => qr/started watching/,
     "Following People" => qr/started following/,
     "New Issue" => qr/opened issue/,
+    "Closed Issue" => qr/closed issue/,
 );
 
 my $AppDomain = "net.bulknews.GitHubGrowler";
