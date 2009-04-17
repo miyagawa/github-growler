@@ -22,6 +22,7 @@ my %events = (
     "Forked Gist" => qr/forked gist:/,
     "Watching Project" => qr/started watching/,
     "Following People" => qr/started following/,
+    "New Issue" => qr/opened issue/,
 );
 
 my $AppDomain = "net.bulknews.GitHubGrowler";
