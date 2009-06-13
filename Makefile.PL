@@ -9,6 +9,6 @@ requires 'Mac::Growl';
 requires 'LWP::Simple';
 requires 'URI';
 requires 'Web::Scraper';
-requires 'XML::Feed';
+requires 'XML::LibXML';
 
 WriteAll;
