@@ -37,7 +37,7 @@ my $AppDomain = "net.bulknews.GitHubGrowler";
 
 my $AppName = "Github Growler";
 my @events  = ((keys %events), "Misc");
-Mac::Growl::RegisterNotifications($AppName, [ @events, 'Fatal Error', 'Error' ], [ @events, 'Fatal Error' ]);
+Mac::Growl::RegisterNotifications($AppName, [ @events, 'Fatal Error', 'Error' ], [ @events, 'Fatal Error' ], "Github Growler");
 
 my $TempDir = "$ENV{HOME}/Library/Caches/$AppDomain";
 mkdir $TempDir, 0777 unless -e $TempDir;
