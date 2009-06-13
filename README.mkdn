@@ -1,6 +1,12 @@
 This is Github Growler: fetches GitHub timeline and growls as new activies are coming in.
 
-This is a perl script that runs as a daemon. You need to install CPAN module dependencies by running `cpan -i`.  See `man cpan` for details.
+## Install
+
+There's a binary build for Mac OS X Leopard available at [Downloads](http://github.com/miyagawa/github-growler/downloads).
+
+If you're trying to run this on other platforms, just run `github-growler.pl`. You might need to install its CPAN module dependencies with `cpan -i . ` command.
+
+## Configurations
 
 You need to set `github.user` and `github.token` in your [global git config](http://github.com/guides/local-github-config) or pass them to the command line arguments.
 
@@ -8,8 +14,6 @@ By default this scripts fetches the github updates every 300 seconds and display
 
     defaults write net.bulknews.GitHubGrowler interval 180
     defaults write net.bulknews.GitHubGrowler maxGrowls 5
-
-It's in my TODO to make it a standalone app. I guess we could use [Platypus](http://www.sveinbjorn.org/platypus) and bundle all CPAN dependencies in its Resources folder by removing the non pure-perl module dependency (i.e. XML::LibXML).
 
 ## Screenshots
 
