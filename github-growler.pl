@@ -7,7 +7,6 @@ use FindBin;
 use lib "$FindBin::Bin/lib";
 use local::lib "$FindBin::Bin/extlib";
 
-use App::Cache;
 use Config::IniFiles;
 use Encode;
 use Mac::Growl;
@@ -15,6 +14,7 @@ use File::Copy;
 use LWP::Simple;
 use URI;
 use XML::Feed;
+use Storable;
 
 our $VERSION = "1.0";
 $XML::Atom::ForceUnicode = 1;
@@ -45,7 +45,27 @@ mkdir $TempDir, 0777 unless -e $TempDir;
 my $AppIcon = "$TempDir/octocat.png";
 copy "$FindBin::Bin/data/octocat.png", $AppIcon;
 
-my $Cache = App::Cache->new({ ttl => 60*60*24, application => $AppName });
+my $Cache = sub {
+    my($key, $code) = @_;
+    $key = lc $key;
+    $key =~ s/[^a-z0-9]+/_/g;
+    my $path = "$ENV{HOME}/.github_growler/cache/$key";
+
+    if (-f $path) {
+        my $age = time - (stat($path))[10];
+        if ($age < 60*60*24) {
+            my $value = Storable::retrieve($path);
+            return $value->{value};
+        } else {
+            unlink $path;
+        }
+    }
+
+    my $data = $code->();
+    Storable::nstore({ value => $data }, $path);
+    return $data;
+};
+
 my %Seen;
 
 my %options = (interval => 300, maxGrowls => 10);
@@ -177,7 +197,7 @@ sub get_event_type {
 
 sub get_user {
     my $name = shift;
-    $Cache->get_code("user:$name", sub {
+    $Cache->("user:$name", sub {
         use Web::Scraper;
         my $scraper = scraper {
             process "#profile_name", name => 'TEXT';
