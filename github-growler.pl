@@ -2,7 +2,13 @@
 use strict;
 use warnings;
 use 5.008001;
+
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use local::lib "$FindBin::Bin/extlib";
+
 use App::Cache;
+use Config::IniFiles;
 use Encode;
 use Mac::Growl;
 use File::Copy;
@@ -10,6 +16,7 @@ use LWP::Simple;
 use URI;
 use XML::Feed;
 
+our $VERSION = "1.0";
 $XML::Atom::ForceUnicode = 1;
 
 my %events = (
@@ -30,13 +37,13 @@ my $AppDomain = "net.bulknews.GitHubGrowler";
 
 my $AppName = "Github Growler";
 my @events  = ((keys %events), "Misc");
-Mac::Growl::RegisterNotifications($AppName, [ @events, 'Error' ], \@events);
+Mac::Growl::RegisterNotifications($AppName, [ @events, 'Fatal Error', 'Error' ], [ @events, 'Fatal Error' ]);
 
 my $TempDir = "$ENV{HOME}/Library/Caches/$AppDomain";
 mkdir $TempDir, 0777 unless -e $TempDir;
 
 my $AppIcon = "$TempDir/octocat.png";
-copy "octocat.png", $AppIcon;
+copy "$FindBin::Bin/data/octocat.png", $AppIcon;
 
 my $Cache = App::Cache->new({ ttl => 60*60*24, application => $AppName });
 my %Seen;
@@ -73,12 +80,23 @@ sub read_preference {
     return $value;
 }
 
-sub get_github_token {
-    chomp(my $user  = `git config github.user`);
-    chomp(my $token = `git config github.token`);
+sub die_notice {
+    my $msg = shift;
+    Mac::Growl::PostNotification($AppName, "Fatal Error", $AppName, $msg, 1, 0, $AppIcon);
+    die $msg;
+}
 
+sub get_github_token {
+    my($user, $token);
+
+    eval {
+        my $config = Config::IniFiles->new(-file => "$ENV{HOME}/.gitconfig");
+        $user  = $config->val('github', 'user');
+        $token = $config->val('github', 'token');
+    };
+        
     unless ($user && $token) {
-        die "Can't find .gitconfig entries for github.user and github.token\n";
+        die_notice("GitHub config not found: See http://github.com/guides/local-github-config and set them");
     }
 
     return ($user, $token);

@@ -5,6 +5,7 @@ all_from "github-growler.pl";
 install_script "github-growler.pl";
 
 requires 'App::Cache';
+requires 'Config::IniFiles';
 requires 'Mac::Growl';
 requires 'LWP::Simple';
 requires 'URI';
