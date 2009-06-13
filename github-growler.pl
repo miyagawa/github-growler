@@ -13,11 +13,10 @@ use Mac::Growl;
 use File::Copy;
 use LWP::Simple;
 use URI;
-use XML::Feed;
+use XML::LibXML;
 use Storable;
 
 our $VERSION = "1.0";
-$XML::Atom::ForceUnicode = 1;
 
 my %events = (
     "New Commits" => qr/(?:pushed to|committed to)/,
@@ -130,18 +129,26 @@ sub growl_feed {
         "http://github.com/$user.private.actor.atom?token=$token",
     );
 
+    my $get_value = sub {
+        my($entry, $tag) = @_;
+        my($node) = $entry->getElementsByTagName($tag);
+        return $node ? $node->textContent : "";
+    };
+
     for my $uri (@feeds) {
-        my $feed = eval { XML::Feed->parse(URI->new($uri)) };
-        unless ($feed) {
+        my $doc = eval { XML::LibXML->new->parse_string(LWP::Simple::get($uri)) };
+        unless ($doc) {
             Mac::Growl::PostNotification($AppName, "Error", $AppName, "Can't parse the feed $uri", 0, 0, $AppIcon);
             next;
         }
 
         my @to_growl;
-        for my $entry ($feed->entries) {
-            next if $Seen{$entry->id}++;
-            my $user = get_user($entry->author);
-            $user->{name} ||= $entry->author;
+        for my $entry ($doc->getElementsByTagName('entry')) {
+            my $id = $get_value->($entry, 'id');
+            next if $Seen{$id}++;
+            my $author = $get_value->($entry, 'name');
+            my $user = get_user($author);
+            $user->{name} ||= $author;
             push @to_growl, { entry => $entry, user => $user };
         }
 
@@ -163,10 +170,10 @@ sub growl_feed {
                 $icon = $AppIcon;
                 $last = 1;
             } else {
-                my $body = munge_update_body($stuff->{entry}->content->body);
-                $event = get_event_type($stuff->{entry}->title);
+                my $body = munge_update_body($get_value->($stuff->{entry}, 'content'));
+                $event = get_event_type($get_value->($stuff->{entry}, 'title'));
                 $title = $stuff->{user}{name};
-                $description  = $stuff->{entry}->title;
+                $description  = $get_value->($stuff->{entry}, 'title');
                 $description .= ": $body" if $body;
                 $icon = $stuff->{user}{avatar} ? "$stuff->{user}{avatar}" : $AppIcon;
             }
