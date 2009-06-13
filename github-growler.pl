@@ -16,7 +16,7 @@ use URI;
 use XML::LibXML;
 use Storable;
 
-our $VERSION = "1.0";
+our $VERSION = "1.1";
 
 my %events = (
     "New Commits" => qr/(?:pushed to|committed to)/,
@@ -44,11 +44,14 @@ mkdir $TempDir, 0777 unless -e $TempDir;
 my $AppIcon = "$TempDir/octocat.png";
 copy "$FindBin::Bin/data/octocat.png", $AppIcon;
 
+my $cache_base = "$ENV{HOME}/.github_growler";
+mkdir $cache_base, 0777 unless -e $cache_base;
+
 my $Cache = sub {
     my($key, $code) = @_;
     $key = lc $key;
     $key =~ s/[^a-z0-9]+/_/g;
-    my $path = "$ENV{HOME}/.github_growler/cache/$key";
+    my $path = "$cache_base/cache/$key";
 
     if (-f $path) {
         my $age = time - (stat($path))[10];
