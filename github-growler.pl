@@ -45,14 +45,11 @@ mkdir $TempDir, 0777 unless -e $TempDir;
 my $AppIcon = "$TempDir/octocat.png";
 copy "$FindBin::Bin/data/octocat.png", $AppIcon;
 
-my $cache_base = "$ENV{HOME}/.github_growler/cache";
-mkpath $cache_base unless -e $cache_base;
-
 my $Cache = sub {
     my($key, $code) = @_;
     $key = lc $key;
     $key =~ s/[^a-z0-9]+/_/g;
-    my $path = "$cache_base/$key";
+    my $path = "$TempDir/$key";
 
     if (-f $path) {
         my $age = time - (stat($path))[10];
