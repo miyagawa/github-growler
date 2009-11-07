@@ -208,8 +208,8 @@ sub get_user {
     $Cache->("user:$name", sub {
         use Web::Scraper;
         my $scraper = scraper {
-            process "#profile_name", name => 'TEXT';
-            process ".identity img", avatar => [ '@src', sub {
+            process ".fn", name => 'TEXT';
+            process ".avatared img", avatar => [ '@src', sub {
                 my $suffix = (split(/\./, $_))[-1];
                 my $path = "$TempDir/$name.$suffix";
                 LWP::Simple::mirror($_, $path);
