@@ -17,7 +17,7 @@ use URI;
 use XML::LibXML;
 use Storable;
 
-our $VERSION = "1.04";
+our $VERSION = "1.05";
 
 my %events = (
     "New Commits" => qr/(?:pushed to|committed to)/,
