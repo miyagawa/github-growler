@@ -4,12 +4,10 @@ use warnings;
 use 5.008001;
 
 use FindBin;
-use lib "$FindBin::Bin/lib";
-use local::lib "$FindBin::Bin/extlib";
 
 use Config::IniFiles;
 use Encode;
-use Mac::Growl;
+use Cocoa::Growl;
 use File::Copy;
 use File::Path;
 use LWP::Simple;
@@ -17,7 +15,7 @@ use URI;
 use XML::LibXML;
 use Storable;
 
-our $VERSION = "1.05";
+use version; our $VERSION = qv("v2.0.0");
 
 my %events = (
     "New Commits" => qr/(?:pushed to|committed to)/,
@@ -36,14 +34,19 @@ my %events = (
 my $AppDomain = "net.bulknews.GitHubGrowler";
 
 my $AppName = "Github Growler";
-my @events  = ((keys %events), "Misc");
-Mac::Growl::RegisterNotifications($AppName, [ @events, 'Fatal Error', 'Error' ], [ @events, 'Fatal Error' ], "Github Growler");
-
 my $TempDir = "$ENV{HOME}/Library/Caches/$AppDomain";
 mkdir $TempDir, 0777 unless -e $TempDir;
 
 my $AppIcon = "$TempDir/octocat.png";
 copy "$FindBin::Bin/data/octocat.png", $AppIcon;
+
+my @events  = ((keys %events), "Misc");
+Cocoa::Growl::growl_register(
+    app  => $AppName,
+    icon => $AppIcon,
+    notifications => [ @events, 'Fatal Error', 'Error' ],
+    defaults => [ @events, 'Fatal Error' ],
+);
 
 my $Cache = sub {
     my($key, $code) = @_;
@@ -102,7 +105,13 @@ sub read_preference {
 
 sub die_notice {
     my $msg = shift;
-    Mac::Growl::PostNotification($AppName, "Fatal Error", $AppName, $msg, 1, 0, $AppIcon);
+    Cocoa::Growl::growl_notify(
+        name => "Fatal Error",
+        title => $AppName,
+        description => $msg,
+        icon => $AppIcon,
+        sticky => 1,
+    );
     die $msg;
 }
 
@@ -114,7 +123,7 @@ sub get_github_token {
         $user  = $config->val('github', 'user');
         $token = $config->val('github', 'token');
     };
-        
+
     unless ($user && $token) {
         die_notice("GitHub config not found: See http://github.com/guides/local-github-config and set them");
     }
@@ -139,7 +148,12 @@ sub growl_feed {
     for my $uri (@feeds) {
         my $doc = eval { XML::LibXML->new->parse_string(LWP::Simple::get($uri)) };
         unless ($doc) {
-            Mac::Growl::PostNotification($AppName, "Error", $AppName, "Can't parse the feed $uri", 0, 0, $AppIcon);
+            Cocoa::Growl::growl_notify(
+                name => "Error",
+                title => $AppName,
+                description => "Can't parse the feed $uri",
+                icon => $AppIcon,
+            );
             next;
         }
 
@@ -178,7 +192,12 @@ sub growl_feed {
                 $description .= ": $body" if $body;
                 $icon = $stuff->{user}{avatar} ? "$stuff->{user}{avatar}" : $AppIcon;
             }
-            Mac::Growl::PostNotification($AppName, $event, encode_utf8($title), encode_utf8($description), 0, 0, $icon);
+            Cocoa::Growl::growl_notify(
+                name => $event,
+                title => encode_utf8($title),
+                description => encode_utf8($description),
+                icon => $icon,
+            );
             last if $last;
         }
     }
