@@ -8,12 +8,12 @@ use lib "$FindBin::Bin/extlib/lib/perl5";
 
 use Config::IniFiles;
 use Encode;
+use AnyEvent;
 use Cocoa::Growl;
+use Cocoa::EventLoop;
+use AnyEvent::HTTP;
 use File::Copy;
 use File::Path;
-use Mozilla::CA;
-use LWP::Simple;
-use URI;
 use XML::LibXML;
 use Storable;
 
@@ -51,7 +51,7 @@ Cocoa::Growl::growl_register(
 );
 
 my $Cache = sub {
-    my($key, $code) = @_;
+    my($key, $code, $cb) = @_;
     $key = lc $key;
     $key =~ s/[^a-z0-9]+/_/g;
     my $path = "$TempDir/$key";
@@ -60,15 +60,18 @@ my $Cache = sub {
         my $age = time - (stat($path))[10];
         if ($age < 60*60*24) {
             my $value = Storable::retrieve($path);
-            return $value->{value};
+            $cb->($value->{value});
+            return;
         } else {
             unlink $path;
         }
     }
 
-    my $data = $code->();
-    Storable::nstore({ value => $data }, $path);
-    return $data;
+    $code->(sub {
+        my $data = shift;
+        Storable::nstore({ value => $data }, $path);
+        $cb->($data);
+    });
 };
 
 my %Seen;
@@ -77,10 +80,11 @@ my %options = (interval => 300, maxGrowls => 10);
 get_preferences(\%options, "interval", "maxGrowls");
 my @args = @ARGV == 2 ? @ARGV : get_github_token();
 
-while (1) {
-    growl_feed(@args);
-    sleep $options{interval};
-}
+my $t = AE::timer 0, $options{interval}, sub {
+    growl_feed(@args, \%options);
+};
+
+AE::cv->recv;
 
 sub get_preferences {
     my($opts, @keys) = @_;
@@ -133,75 +137,71 @@ sub get_github_token {
     return ($user, $token);
 }
 
+sub get_value {
+    my($entry, $tag) = @_;
+    my($node) = $entry->getElementsByTagName($tag);
+    return $node ? $node->textContent : "";
+}
+
 sub growl_feed {
-    my($user, $token) = @_;
+    my($user, $token, $options) = @_;
 
     my @feeds = (
         "https://github.com/$user.private.atom?token=$token",
         "https://github.com/$user.private.actor.atom?token=$token",
     );
 
-    my $get_value = sub {
-        my($entry, $tag) = @_;
-        my($node) = $entry->getElementsByTagName($tag);
-        return $node ? $node->textContent : "";
-    };
-
     for my $uri (@feeds) {
-        my $doc = eval { XML::LibXML->new->parse_string(LWP::Simple::get($uri)) };
-        unless ($doc) {
-            Cocoa::Growl::growl_notify(
-                name => "Error",
-                title => $AppName,
-                description => "Can't parse the feed $uri",
-                icon => $AppIcon,
-            );
-            next;
-        }
+        http_get $uri, sub {
+            my $doc = $_[1]->{Status} == 200
+                ? eval { XML::LibXML->new->parse_string($_[0]) } : undef;
 
-        my @to_growl;
-        for my $entry ($doc->getElementsByTagName('entry')) {
-            my $id = $get_value->($entry, 'id');
-            next if $Seen{$id}++;
-            my $author = $get_value->($entry, 'name');
-            my $user = get_user($author);
-            $user->{name} ||= $author;
-            push @to_growl, { entry => $entry, user => $user };
-        }
-
-        my $i;
-        for my $stuff (@to_growl) {
-            my($event, $title, $description, $icon, $last);
-            if ($i++ >= $options{maxGrowls}) {
-                my %uniq;
-                $event = "Misc";
-                $title = (@to_growl - $options{maxGrowls}) . " more updates";
-                my @who = grep !$uniq{$_}++, map $_->{user}{name}, @to_growl[$i..$#to_growl];
-                $description = "From ";
-                if (@who > 1) {
-                    $description .= join ", ", @who[0..$#who-1];
-                    $description .= " and " . $who[-1];
-                } else {
-                    $description .= "$who[0]";
-                }
-                $icon = $AppIcon;
-                $last = 1;
-            } else {
-                my $body = munge_update_body($get_value->($stuff->{entry}, 'content'));
-                $event = get_event_type($get_value->($stuff->{entry}, 'title'));
-                $title = $stuff->{user}{name};
-                $description  = $get_value->($stuff->{entry}, 'title');
-                $description .= ": $body" if $body;
-                $icon = $stuff->{user}{avatar} ? "$stuff->{user}{avatar}" : $AppIcon;
+            unless ($doc) {
+                Cocoa::Growl::growl_notify(
+                    name => "Error",
+                    title => $AppName,
+                    description => "Can't parse the feed $uri",
+                    icon => $AppIcon,
+                );
+                return;
             }
-            Cocoa::Growl::growl_notify(
-                name => $event,
-                title => encode_utf8($title),
-                description => encode_utf8($description),
-                icon => $icon,
-            );
-            last if $last;
-        }
+
+            my @to_growl;
+            for my $entry ($doc->getElementsByTagName('entry')) {
+                my $id = get_value($entry, 'id');
+                next if $Seen{$id}++;
+                last if @to_growl >= $options->{maxGrowls};
+                push @to_growl, $entry;
+            }
+
+            for my $entry (@to_growl) {
+                my $author = get_value($entry, 'name');
+                get_user($author, sub {
+                    my $user = shift;
+                    $user->{name} ||= $author;
+
+                    my $body = munge_update_body(get_value($entry, 'content'));
+                    my $event = get_event_type(get_value($entry, 'title'));
+                    my $title = $user->{name};
+                    my $description = get_value($entry, 'title');
+                    $description .= ": $body" if $body;
+                    my $icon = $user->{avatar} ? "$user->{avatar}" : $AppIcon;
+
+                    Cocoa::Growl::growl_notify(
+                        name => $event,
+                        title => encode_utf8($title),
+                        description => encode_utf8($description),
+                        icon => $icon,
+                        on_click => sub {
+                            my($node) = $entry->getElementsByTagName("link");
+                            if ($node and my $link = $node->getAttribute("href")) {
+                                system("open", $link);
+                            }
+                        },
+                    );
+                });
+            }
+        };
     }
 }
 
@@ -225,21 +225,26 @@ sub get_event_type {
 }
 
 sub get_user {
-    my $name = shift;
-    $Cache->("user:$name", sub {
-        use Web::Scraper;
-        my $scraper = scraper {
-            process ".fn", name => 'TEXT';
-            process ".avatared img", avatar => [ '@src', sub {
-                my $suffix = (split(/\./, $_))[-1];
-                my $path = "$TempDir/$name.$suffix";
-                LWP::Simple::mirror($_, $path);
-                return $path;
-            } ];
-        };
+    my($name, $cb) = @_;
 
-        return eval { $scraper->scrape(URI->new("http://github.com/$name")) } || {};
-    });
+    $Cache->("user:$name", sub {
+        my $cb = shift;
+
+        http_get "https://github.com/$name", sub {
+            if ($_[1]->{Status} == 200) {
+                use Web::Scraper;
+                my $scraper = scraper {
+                    process ".fn", name => 'TEXT';
+                    process ".avatared img", avatar => '@src';
+                };
+
+                my $res = eval { $scraper->scrape($_[0]) } || {};
+                $cb->($res);
+            } else {
+                $cb->({});
+            }
+        };
+    }, $cb);
 }
 
 __END__

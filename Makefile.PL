@@ -6,10 +6,10 @@ install_script "github-growler.pl";
 
 requires 'Config::IniFiles';
 requires 'Cocoa::Growl';
-requires 'LWP::Simple';
-requires 'URI';
+requires 'Cocoa::EventLoop';
+requires 'AnyEvent::Impl::Cocoa';
+requires 'AnyEvent::HTTP';
 requires 'Web::Scraper';
 requires 'XML::LibXML';
-requires 'Mozilla::CA';
 
 WriteAll;
