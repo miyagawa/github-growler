@@ -1,5 +1,6 @@
 #!/bin/sh
-VERSION=v2.0.0
+VERSION=`perl -lne '/qv\("(v[\d\.]+)"\)/ and print $1' github-growler.pl`
+echo "Building Github Growler $VERSION"
 
 rm -rf "Github Growler.app"
 
