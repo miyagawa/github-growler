@@ -5,7 +5,7 @@ echo "Building Github Growler $VERSION"
 rm -rf "Github Growler.app"
 
 # bundle extra libraries into extlib
-/usr/bin/perl -S cpanm -L extlib --no-man-pages --notest --installdeps .
+/usr/bin/perl -S cpanm -L extlib --notest --installdeps .
 
 # Build .app
 platypus -a 'Github Growler' \

@@ -17,7 +17,7 @@ use File::Path;
 use XML::LibXML;
 use Storable;
 
-use version; our $VERSION = qv("v2.0.0");
+use version; our $VERSION = qv("v2.1.0");
 
 my %events = (
     "New Commits" => qr/(?:pushed to|committed to)/,

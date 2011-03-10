@@ -1,5 +1,9 @@
 Release notes for github-growler
 
+v2.1.0  Wed Mar  9 21:39:22 PST 2011
+        - Support onClick handler!
+        - Reimplemented HTTP stack with AnyEvent
+
 v2.0.0  Wed Mar  9 17:38:37 PST 2011
         - Support Snow Leopard
         - Switch to Cocoa::Growl
