@@ -4,14 +4,6 @@ name "github-growler";
 all_from "github-growler.pl";
 install_script "github-growler.pl";
 
-bundle_platypus(
-    extlib => 'extlib',
-    script => 'github-growler.pl',
-    app    => "Github Growler",
-    author => "Tatsuhiko Miyagawa",
-    icon   => "appIcon.icns",
-);
-
 requires 'Config::IniFiles';
 requires 'Cocoa::Growl';
 requires 'LWP::Simple';
