@@ -18,5 +18,6 @@ requires 'LWP::Simple';
 requires 'URI';
 requires 'Web::Scraper';
 requires 'XML::LibXML';
+requires 'Mozilla::CA';
 
 WriteAll;

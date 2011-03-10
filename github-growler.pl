@@ -4,12 +4,14 @@ use warnings;
 use 5.008001;
 
 use FindBin;
+use lib "$FindBin::Bin/extlib/lib/perl5";
 
 use Config::IniFiles;
 use Encode;
 use Cocoa::Growl;
 use File::Copy;
 use File::Path;
+use Mozilla::CA;
 use LWP::Simple;
 use URI;
 use XML::LibXML;
@@ -135,8 +137,8 @@ sub growl_feed {
     my($user, $token) = @_;
 
     my @feeds = (
-        "http://github.com/$user.private.atom?token=$token",
-        "http://github.com/$user.private.actor.atom?token=$token",
+        "https://github.com/$user.private.atom?token=$token",
+        "https://github.com/$user.private.actor.atom?token=$token",
     );
 
     my $get_value = sub {
