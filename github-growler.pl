@@ -170,7 +170,7 @@ sub growl_feed {
             for my $entry ($doc->getElementsByTagName('entry')) {
                 my $id = get_value($entry, 'id');
                 next if $Seen{$id}++;
-                last if @to_growl >= $options->{maxGrowls};
+                next if @to_growl >= $options->{maxGrowls}; # not last, so that we can cache them in %Seen
                 push @to_growl, $entry;
             }
 
