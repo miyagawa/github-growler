@@ -1,5 +1,8 @@
 Release notes for github-growler
 
+v2.1.1  Thu Mar 10 16:44:16 PST 2011
+        - Fix UTF-8 character handling of user's full names
+
 v2.1.0  Wed Mar  9 21:39:22 PST 2011
         - Support onClick handler!
         - Reimplemented HTTP stack with AnyEvent
