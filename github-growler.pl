@@ -180,7 +180,7 @@ sub growl_feed {
                     my $user = shift;
                     $user->{name} ||= $author;
 
-                    my $body = munge_update_body(get_value($entry, 'content'));
+                    my $body  = munge_update_body(get_value($entry, 'content'));
                     my $event = get_event_type(get_value($entry, 'title'));
                     my $title = $user->{name};
                     my $description = get_value($entry, 'title');
@@ -238,7 +238,7 @@ sub get_user {
                     process ".avatared img", avatar => '@src';
                 };
 
-                my $res = eval { $scraper->scrape($_[0]) } || {};
+                my $res = eval { $scraper->scrape( Encode::decode_utf8($_[0]) ) } || {};
                 $cb->($res);
             } else {
                 $cb->({});
