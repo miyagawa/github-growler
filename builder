@@ -23,7 +23,7 @@ platypus -a 'Github Growler' \
 echo
 
 # Build.zip
-zip -r Github-Growler-$VERSION.zip "Github Growler.app" > /dev/null
+zip -r releases/Github-Growler-$VERSION.zip "Github Growler.app" > /dev/null
 
-echo "Github-Growler-$VERSION.zip created"
+echo "Github-Growler-$VERSION.zip created in releases/"
 
