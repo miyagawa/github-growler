@@ -1,5 +1,8 @@
 Release notes for github-growler
 
+v2.1.2  Tue Mar 15 19:10:32 PDT 2011
+        - Added more event types for Growl
+
 v2.1.1  Thu Mar 10 16:44:16 PST 2011
         - Fix UTF-8 character handling of user's full names
 
