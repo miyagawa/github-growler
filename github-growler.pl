@@ -16,6 +16,8 @@ use File::Copy;
 use File::Path;
 use XML::LibXML;
 use Storable;
+use JSON;
+use Net::SSLeay;
 
 use version; our $VERSION = qv("v2.1.2");
 
@@ -238,16 +240,15 @@ sub get_user {
     $Cache->("user:$name", sub {
         my $cb = shift;
 
-        http_get "https://github.com/$name", sub {
+        http_get "http://github.com/api/v2/json/user/show/$name", sub {
             if ($_[1]->{Status} == 200) {
-                use Web::Scraper;
-                my $scraper = scraper {
-                    process ".fn", name => 'TEXT';
-                    process ".avatared img", avatar => '@src';
-                };
-
-                my $res = eval { $scraper->scrape( Encode::decode_utf8($_[0]) ) } || {};
-                $cb->($res);
+                my $content = JSON::decode_json($_[0]);
+                $cb->({
+                    name   => $content->{user}->{name},
+                    avatar => "https://secure.gravatar.com/avatar/"
+                      . $content->{user}->{gravatar_id}
+                      . "?s=140&d=https://d3nwyuy0nl342s.cloudfront.net%2Fimages%2Fgravatars%2Fgravatar-140.png",
+                });
             } else {
                 $cb->({});
             }
