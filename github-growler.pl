@@ -18,6 +18,7 @@ use XML::LibXML;
 use Storable;
 use JSON;
 use Net::SSLeay;
+use HTML::TreeBuilder;
 
 use version; our $VERSION = qv("v2.1.2");
 
@@ -224,11 +225,20 @@ sub growl_feed {
 }
 
 sub munge_update_body {
-    use Web::Scraper;
     my $content = shift;
-    my $res = scraper { process "div.message", message => 'TEXT' }->scrape($content);
-    $res->{message} =~ s/^\s*[0-9a-f]{40}\s*//; # strip SHA1
-    return $res->{message};
+
+    my $tree = HTML::TreeBuilder->new;
+    $tree->parse($content);
+    $tree->eof;
+
+    my $tag = $tree->look_down(_tag => "div", class => "message");
+    if ($tag) {
+        my $message = $tag->as_text;
+        $message =~ s/^\s*[0-9a-f]{40}\s*//; # strip SHA1
+        return $message;
+    }
+
+    return '';
 }
 
 sub get_event_type {

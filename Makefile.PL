@@ -9,9 +9,9 @@ requires 'Cocoa::Growl';
 requires 'Cocoa::EventLoop';
 requires 'AnyEvent::Impl::Cocoa';
 requires 'AnyEvent::HTTP';
-requires 'Web::Scraper';
 requires 'XML::LibXML';
 requires 'JSON';
 requires 'Net::SSLeay';
+requires 'HTML::TreeBuilder';
 
 WriteAll;
