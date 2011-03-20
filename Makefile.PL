@@ -11,5 +11,7 @@ requires 'AnyEvent::Impl::Cocoa';
 requires 'AnyEvent::HTTP';
 requires 'Web::Scraper';
 requires 'XML::LibXML';
+requires 'JSON';
+requires 'Net::SSLeay';
 
 WriteAll;
