@@ -85,6 +85,7 @@ my $Cache = sub {
 };
 
 my %Seen;
+my %Etags;
 
 my %options = (interval => 300, maxGrowls => 10);
 get_preferences(\%options, "interval", "maxGrowls");
@@ -162,9 +163,16 @@ sub growl_feed {
     );
 
     for my $uri (@feeds) {
-        http_get $uri, sub {
+
+        my $headers = {};
+        $headers->{'If-None-Match'} = $Etags{$uri} if defined $Etags{$uri};
+
+        http_get $uri, headers => $headers, sub {
+            return if $_[1]->{Status} == 304;
             my $doc = $_[1]->{Status} == 200
                 ? eval { XML::LibXML->new->parse_string($_[0]) } : undef;
+
+            $Etags{$uri} = $_[1]->{etag};
 
             unless ($doc) {
                 Cocoa::Growl::growl_notify(
