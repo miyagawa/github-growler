@@ -20,7 +20,7 @@ use JSON;
 use Net::SSLeay;
 use HTML::TreeBuilder;
 
-use version; our $VERSION = qv("v2.1.2");
+use version; our $VERSION = qv("v2.1.3");
 
 my %events = (
     "New Commits" => qr/(?:pushed to|committed to)/,

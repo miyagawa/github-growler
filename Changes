@@ -1,5 +1,9 @@
 Release notes for github-growler
 
+v2.1.3  Sun Mar 20 10:37:21 PDT 2011
+        - Use github API to get user information instead of screen scraping (franckcuny)
+        - Use ETags to improve page caching (franckcuny)
+
 v2.1.2  Tue Mar 15 19:10:32 PDT 2011
         - Added more event types for Growl
 
