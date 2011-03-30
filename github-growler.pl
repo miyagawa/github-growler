@@ -168,7 +168,7 @@ sub growl_feed {
         my $headers = {};
         $headers->{'If-None-Match'} = $Etags{$uri} if defined $Etags{$uri};
 
-        http_get $uri, headers => $headers, sub {
+        http_get $uri, headers => $headers, persistent => 0, sub {
             return if $_[1]->{Status} == 304;
             my $doc = $_[1]->{Status} == 200
                 ? eval { XML::LibXML->new->parse_string($_[0]) } : undef;
@@ -258,7 +258,7 @@ sub get_user {
     $Cache->("user:$name", sub {
         my $cb = shift;
 
-        http_get "http://github.com/api/v2/json/user/show/$name", sub {
+        http_get "http://github.com/api/v2/json/user/show/$name", persistent => 0, sub {
             if ($_[1]->{Status} == 200) {
                 my $content = JSON::decode_json($_[0]);
                 $cb->({
